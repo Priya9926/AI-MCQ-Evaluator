@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Topic-Aware RAG Question Generator | Assessment AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #07090e;
+            --bg-surface: #0f141f;
+            --bg-card: rgba(18, 24, 38, 0.75);
+            --bg-card-hover: rgba(26, 35, 56, 0.85);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(99, 102, 241, 0.35);
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --secondary: #8b5cf6;
+            --accent-cyan: #06b6d4;
+            --accent-emerald: #10b981;
+            --accent-rose: #f43f5e;
+            --accent-amber: #f59e0b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --font-heading: 'Outfit', sans-serif;
+            --font-body: 'Plus Jakarta Sans', sans-serif;
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-glow: 0 0 30px rgba(99, 102, 241, 0.15);
+            --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.05) 0%, transparent 60%);
+            background-attachment: fixed;
+            overflow-x: hidden;
+        }
+
+        /* Top Navigation */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 36px;
+            background: rgba(15, 20, 31, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+        }
+
+        .brand-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .brand-text h1 {
+            font-family: var(--font-heading);
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 40%, #c7d2fe 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-text p {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .nav-stats {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .stat-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .stat-pill .indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-emerald);
+            box-shadow: 0 0 10px var(--accent-emerald);
+            animation: pulse 2s infinite;
+        }
+
+        .stat-pill strong {
+            color: var(--text-primary);
+        }
+
+        .btn-docs {
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-docs:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.25);
+        }
+
+        /* Container Layout */
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 28px 36px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 28px;
+            flex: 1;
+        }
+
+        @media (max-width: 1080px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glass Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-card);
+            padding: 24px;
+            position: relative;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .card-title {
+            font-family: var(--font-heading);
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-title .icon {
+            font-size: 20px;
+        }
+
+        /* Form Controls */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 7px;
+        }
+
+        .form-label .badge {
+            font-size: 11px;
+            padding: 2px 7px;
+            border-radius: 4px;
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+        }
+
+        .form-control, .form-select {
+            width: 100%;
+            padding: 12px 14px;
+            background: rgba(10, 14, 23, 0.8);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 14px;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            background: rgba(15, 20, 31, 0.95);
+        }
+
+        .form-select option {
+            background: #0f141f;
+            color: #f8fafc;
+        }
+
+        /* Pill Selectors */
+        .pill-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .pill-option {
+            display: none;
+        }
+
+        .pill-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .pill-label:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+        }
+
+        .pill-option:checked + .pill-label {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(139, 92, 246, 0.25));
+            border-color: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+        }
+
+        .pill-label.easy { border-color: rgba(16, 185, 129, 0.2); }
+        .pill-option:checked + .pill-label.easy {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--accent-emerald);
+            color: #a7f3d0;
+        }
+        .pill-label.medium { border-color: rgba(245, 158, 11, 0.2); }
+        .pill-option:checked + .pill-label.medium {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: var(--accent-amber);
+            color: #fde68a;
+        }
+        .pill-label.hard { border-color: rgba(244, 63, 94, 0.2); }
+        .pill-option:checked + .pill-label.hard {
+            background: rgba(244, 63, 94, 0.2);
+            border-color: var(--accent-rose);
+            color: #fecdd3;
+        }
+
+        /* Slider */
+        .slider-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .slider-wrapper input[type="range"] {
+            flex: 1;
+            accent-color: var(--primary);
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            outline: none;
+        }
+
+        .slider-value {
+            font-family: var(--font-heading);
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            min-width: 28px;
+            text-align: right;
+        }
+
+        /* Primary Action Button */
+        .btn-generate {
+            width: 100%;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: #ffffff;
+            font-family: var(--font-heading);
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 0 25px var(--primary-glow);
+            transition: all 0.25s ease;
+            margin-top: 10px;
+        }
+
+        .btn-generate:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 0 35px rgba(99, 102, 241, 0.6);
+        }
+
+        .btn-generate:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Quick Ingest Bar */
+        .ingest-box {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px dashed var(--border);
+            border-radius: var(--radius-md);
+        }
+
+        .ingest-box-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .btn-rescan {
+            width: 100%;
+            padding: 9px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-rescan:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Right Panel: Output Workspace */
+        .workspace {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .results-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .results-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .topic-tag {
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #c7d2fe;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .diff-tag {
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .diff-tag.easy { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .diff-tag.medium { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .diff-tag.hard { background: rgba(244, 63, 94, 0.15); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.3); }
+
+        .action-tools {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-tool {
+            padding: 7px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-tool:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        /* Question Cards */
+        .questions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .question-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 22px;
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .question-card:hover {
+            border-color: rgba(255, 255, 255, 0.18);
+            box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4);
+        }
+
+        .question-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .q-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            color: #c7d2fe;
+            font-family: var(--font-heading);
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .q-text {
+            font-family: var(--font-heading);
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+            line-height: 1.45;
+            flex: 1;
+        }
+
+        /* Options Grid */
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .options-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .option-item {
+            padding: 12px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .option-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .option-key {
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .option-val {
+            font-size: 13.5px;
+            color: #cbd5e1;
+            line-height: 1.35;
+        }
+
+        .option-item.correct {
+            background: rgba(16, 185, 129, 0.12) !important;
+            border-color: var(--accent-emerald) !important;
+        }
+
+        .option-item.correct .option-key {
+            background: var(--accent-emerald);
+            color: #052e16;
+        }
+
+        .option-item.wrong {
+            background: rgba(244, 63, 94, 0.12) !important;
+            border-color: var(--accent-rose) !important;
+        }
+
+        .option-item.wrong .option-key {
+            background: var(--accent-rose);
+            color: #ffffff;
+        }
+
+        /* Grounded Explanation Box */
+        .explanation-box {
+            padding: 14px 16px;
+            background: rgba(10, 14, 23, 0.6);
+            border-left: 3px solid var(--accent-cyan);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .explanation-box strong {
+            color: var(--accent-cyan);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .chunk-sources {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .chunk-badge {
+            font-size: 11px;
+            font-family: monospace;
+            padding: 2px 7px;
+            background: rgba(6, 182, 212, 0.12);
+            border: 1px solid rgba(6, 182, 212, 0.25);
+            border-radius: 4px;
+            color: #67e8f9;
+        }
+
+        /* Empty & Loading States */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 14px;
+            opacity: 0.6;
+        }
+
+        .empty-title {
+            font-family: var(--font-heading);
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+
+        .empty-desc {
+            font-size: 13px;
+            max-width: 380px;
+            line-height: 1.5;
+        }
+
+        .loading-overlay {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            gap: 16px;
+        }
+
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 3px solid rgba(99, 102, 241, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        .loading-text {
+            font-family: var(--font-heading);
+            font-size: 16px;
+            font-weight: 600;
+            color: #c7d2fe;
+        }
+
+        .loading-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Notification Toast */
+        .toast {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            background: #1e293b;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-card);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success { border-color: var(--accent-emerald); background: #064e3b; }
+        .toast.error { border-color: var(--accent-rose); background: #881337; }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.9); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navbar -->
+    <header class="navbar">
+        <a href="/" class="brand-wrapper">
+            <div class="brand-icon">⚡</div>
+            <div class="brand-text">
+                <h1>Topic-Aware RAG Engine</h1>
+                <p>Zero-Leakage Assessment Generator</p>
+            </div>
+        </a>
+        <div class="nav-stats">
+            <div class="stat-pill">
+                <span class="indicator"></span>
+                <span>ChromaDB: <strong id="stat-chunks">--</strong> chunks</span>
+            </div>
+            <div class="stat-pill">
+                <span>Subjects: <strong id="stat-subjects">--</strong></span>
+            </div>
+            <a href="/docs" target="_blank" class="btn-docs">
+                <span>📖 API Docs</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="container">
+        <!-- Configuration & Generation Panel -->
+        <aside class="sidebar">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <span class="icon">🎯</span> Target Topic Setup
+                    </h2>
+                </div>
+
+                <form id="gen-form">
+                    <!-- Subject Selector -->
+                    <div class="form-group">
+                        <label class="form-label" for="select-subject">
+                            <span>Subject</span>
+                            <span class="badge">Dynamic</span>
+                        </label>
+                        <select id="select-subject" class="form-select" required>
+                            <option value="" disabled selected>Loading subjects from vector DB...</option>
+                        </select>
+                    </div>
+
+                    <!-- Chapter Selector -->
+                    <div class="form-group">
+                        <label class="form-label" for="select-chapter">
+                            <span>Chapter</span>
+                        </label>
+                        <select id="select-chapter" class="form-select" required disabled>
+                            <option value="" disabled selected>Select a subject first</option>
+                        </select>
+                    </div>
+
+                    <!-- Topic Selector -->
+                    <div class="form-group">
+                        <label class="form-label" for="select-topic">
+                            <span>Topic (Strict Isolation Target)</span>
+                        </label>
+                        <select id="select-topic" class="form-select" required disabled>
+                            <option value="" disabled selected>Select a chapter first</option>
+                        </select>
+                    </div>
+
+                    <!-- Subtopic / Section (Optional) -->
+                    <div class="form-group">
+                        <label class="form-label" for="input-subtopic">
+                            <span>Subtopic / Focus</span>
+                            <span class="badge">Optional</span>
+                        </label>
+                        <input type="text" id="input-subtopic" class="form-control" placeholder="e.g. Definition, Formula, General">
+                    </div>
+
+                    <!-- Question Difficulty -->
+                    <div class="form-group">
+                        <label class="form-label">
+                            <span>Difficulty Level</span>
+                        </label>
+                        <div class="pill-group">
+                            <input type="radio" name="difficulty" id="diff-easy" value="easy" class="pill-option">
+                            <label for="diff-easy" class="pill-label easy">Easy</label>
+
+                            <input type="radio" name="difficulty" id="diff-medium" value="medium" class="pill-option" checked>
+                            <label for="diff-medium" class="pill-label medium">Medium</label>
+
+                            <input type="radio" name="difficulty" id="diff-hard" value="hard" class="pill-option">
+                            <label for="diff-hard" class="pill-label hard">Hard</label>
+                        </div>
+                    </div>
+
+                    <!-- Question Count Slider -->
+                    <div class="form-group">
+                        <label class="form-label" for="range-count">
+                            <span>Question Count</span>
+                            <span class="slider-value" id="count-display">5</span>
+                        </label>
+                        <div class="slider-wrapper">
+                            <input type="range" id="range-count" min="1" max="15" value="5" step="1">
+                        </div>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button type="submit" id="btn-submit" class="btn-generate">
+                        <span>✨ Generate Grounded Questions</span>
+                    </button>
+                </form>
+
+                <!-- Ingest Box -->
+                <div class="ingest-box">
+                    <div class="ingest-box-header">
+                        <span>Upload Folder Sync</span>
+                        <span>./upload</span>
+                    </div>
+                    <button type="button" id="btn-ingest-folder" class="btn-rescan">
+                        <span>🔄 Rescan & Ingest 'upload' Folder</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Output Workspace -->
+        <section class="workspace">
+            <div class="card" style="min-height: 580px;">
+                <!-- Header with Action Tools -->
+                <div class="results-header" id="results-bar" style="display: none;">
+                    <div class="results-meta">
+                        <span class="topic-tag" id="active-topic-badge">
+                            <span>📍</span> <span id="active-topic-name">Topic</span>
+                        </span>
+                        <span class="diff-tag medium" id="active-diff-badge">Medium</span>
+                        <span style="font-size: 12px; color: var(--text-muted);" id="active-count-label">5 Questions Generated</span>
+                    </div>
+                    <div class="action-tools">
+                        <button type="button" class="btn-tool" id="btn-copy-json">
+                            <span>📋 Copy JSON</span>
+                        </button>
+                        <button type="button" class="btn-tool" id="btn-print">
+                            <span>🖨️ Print</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Initial Empty State -->
+                <div class="empty-state" id="empty-state">
+                    <div class="empty-icon">📚</div>
+                    <h3 class="empty-title">Ready to Generate Questions</h3>
+                    <p class="empty-desc">
+                        Select a Subject, Chapter, and Topic on the left. The RAG pipeline will filter relevant source chunks and prompt Gemini to generate verified questions.
+                    </p>
+                </div>
+
+                <!-- Loading State -->
+                <div class="loading-overlay" id="loading-state">
+                    <div class="spinner"></div>
+                    <div class="loading-text">Extracting & Validating Questions...</div>
+                    <div class="loading-sub">Applying metadata filter → Vector search → Gemini synthesis → Groundedness check</div>
+                </div>
+
+                <!-- Question Cards Container -->
+                <div class="questions-list" id="questions-container" style="display: none;">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast-msg">Notification message</div>
+
+    <script>
+        // State
+        let fullCatalog = [];
+        let generatedQuestions = [];
+
+        // DOM Elements
+        const selectSubject = document.getElementById('select-subject');
+        const selectChapter = document.getElementById('select-chapter');
+        const selectTopic = document.getElementById('select-topic');
+        const inputSubtopic = document.getElementById('input-subtopic');
+        const rangeCount = document.getElementById('range-count');
+        const countDisplay = document.getElementById('count-display');
+        const genForm = document.getElementById('gen-form');
+        const btnSubmit = document.getElementById('btn-submit');
+        const btnIngestFolder = document.getElementById('btn-ingest-folder');
+        const emptyState = document.getElementById('empty-state');
+        const loadingState = document.getElementById('loading-state');
+        const questionsContainer = document.getElementById('questions-container');
+        const resultsBar = document.getElementById('results-bar');
+        const activeTopicName = document.getElementById('active-topic-name');
+        const activeDiffBadge = document.getElementById('active-diff-badge');
+        const activeCountLabel = document.getElementById('active-count-label');
+        const statChunks = document.getElementById('stat-chunks');
+        const statSubjects = document.getElementById('stat-subjects');
+        const toastMsg = document.getElementById('toast-msg');
+        const btnCopyJson = document.getElementById('btn-copy-json');
+        const btnPrint = document.getElementById('btn-print');
+
+        // Update Slider Display
+        rangeCount.addEventListener('input', (e) => {
+            countDisplay.textContent = e.target.value;
+        });
+
+        // Toast Helper
+        function showToast(message, type = 'success') {
+            toastMsg.textContent = message;
+            toastMsg.className = `toast show ${type}`;
+            setTimeout(() => {
+                toastMsg.className = 'toast';
+            }, 3500);
+        }
+
+        // Fetch System Stats & Hierarchy on load
+        async function fetchSystemData() {
+            try {
+                // 1. Fetch Stats
+                const statsRes = await fetch('/api/v1/documents/stats');
+                if (statsRes.ok) {
+                    const stats = await statsRes.json();
+                    statChunks.textContent = stats.total_chunks || 0;
+                    statSubjects.textContent = stats.total_subjects || 0;
+                }
+
+                // 2. Fetch Topics Catalog
+                const topicsRes = await fetch('/api/v1/documents/topics/all');
+                if (topicsRes.ok) {
+                    fullCatalog = await topicsRes.json();
+                    populateSubjectDropdown();
+                }
+            } catch (err) {
+                console.error('Failed to load initial catalog:', err);
+                showToast('Failed to connect to backend API', 'error');
+            }
+        }
+
+        function populateSubjectDropdown() {
+            selectSubject.innerHTML = '<option value="" disabled selected>Choose a Subject...</option>';
+            selectChapter.innerHTML = '<option value="" disabled selected>Select a subject first</option>';
+            selectChapter.disabled = true;
+            selectTopic.innerHTML = '<option value="" disabled selected>Select a chapter first</option>';
+            selectTopic.disabled = true;
+
+            if (!fullCatalog || fullCatalog.length === 0) {
+                selectSubject.innerHTML = '<option value="" disabled selected>No documents indexed yet</option>';
+                return;
+            }
+
+            fullCatalog.forEach((item) => {
+                if (item.subject && item.subject !== 'General Subject') {
+                    const opt = document.createElement('option');
+                    opt.value = item.subject;
+                    opt.textContent = `${item.subject} (${item.chapters.length} chapters)`;
+                    selectSubject.appendChild(opt);
+                }
+            });
+        }
+
+        // Subject Change Handler
+        selectSubject.addEventListener('change', () => {
+            const selectedSubj = selectSubject.value;
+            const subjectData = fullCatalog.find(c => c.subject === selectedSubj);
+
+            selectChapter.innerHTML = '<option value="" disabled selected>Choose a Chapter...</option>';
+            selectChapter.disabled = false;
+            selectTopic.innerHTML = '<option value="" disabled selected>Select a chapter first</option>';
+            selectTopic.disabled = true;
+
+            if (subjectData && subjectData.chapters) {
+                subjectData.chapters.forEach((chap) => {
+                    const opt = document.createElement('option');
+                    opt.value = chap.name;
+                    opt.textContent = chap.name;
+                    selectChapter.appendChild(opt);
+                });
+            }
+        });
+
+        // Chapter Change Handler
+        selectChapter.addEventListener('change', () => {
+            const selectedSubj = selectSubject.value;
+            const selectedChap = selectChapter.value;
+            const subjectData = fullCatalog.find(c => c.subject === selectedSubj);
+
+            selectTopic.innerHTML = '<option value="" disabled selected>Choose a Topic...</option>';
+            selectTopic.disabled = false;
+
+            if (subjectData && subjectData.chapters) {
+                const chapData = subjectData.chapters.find(ch => ch.name === selectedChap);
+                if (chapData && chapData.topics) {
+                    chapData.topics.forEach((top) => {
+                        const opt = document.createElement('option');
+                        opt.value = top.name;
+                        opt.textContent = top.name;
+                        selectTopic.appendChild(opt);
+                    });
+                }
+            }
+        });
+
+        // Generate Form Submit
+        genForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const subject = selectSubject.value;
+            const chapter = selectChapter.value;
+            const topic = selectTopic.value;
+            const subtopic = inputSubtopic.value.trim() || null;
+            const difficulty = document.querySelector('input[name="difficulty"]:checked').value;
+            const count = parseInt(rangeCount.value, 10);
+
+            if (!subject || !chapter || !topic) {
+                showToast('Please select Subject, Chapter, and Topic', 'error');
+                return;
+            }
+
+            // Set UI Loading State
+            emptyState.style.display = 'none';
+            questionsContainer.style.display = 'none';
+            resultsBar.style.display = 'none';
+            loadingState.style.display = 'flex';
+            btnSubmit.disabled = true;
+
+            try {
+                const res = await fetch('/api/v1/questions/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        subject,
+                        chapter,
+                        topic,
+                        subtopic,
+                        question_type: 'mcq',
+                        difficulty,
+                        count
+                    })
+                });
+
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.detail || 'Question generation failed');
+                }
+
+                const data = await res.json();
+                generatedQuestions = data.questions || [];
+
+                renderQuestions(data, subject, chapter, topic, difficulty);
+                showToast(`Successfully generated ${generatedQuestions.length} verified questions!`, 'success');
+            } catch (err) {
+                console.error(err);
+                loadingState.style.display = 'none';
+                emptyState.style.display = 'flex';
+                showToast(err.message, 'error');
+            } finally {
+                btnSubmit.disabled = false;
+            }
+        });
+
+        // Render Question Cards
+        function renderQuestions(data, subject, chapter, topic, difficulty) {
+            loadingState.style.display = 'none';
+            resultsBar.style.display = 'flex';
+            questionsContainer.style.display = 'flex';
+            questionsContainer.innerHTML = '';
+
+            activeTopicName.textContent = `${subject} › ${chapter} › ${topic}`;
+            activeDiffBadge.textContent = difficulty.toUpperCase();
+            activeDiffBadge.className = `diff-tag ${difficulty}`;
+            activeCountLabel.textContent = `${generatedQuestions.length} Questions Generated`;
+
+            generatedQuestions.forEach((q, idx) => {
+                const card = document.createElement('div');
+                card.className = 'question-card';
+
+                const optionsHtml = Object.entries(q.options).map(([key, val]) => `
+                    <div class="option-item" onclick="checkOption(this, '${key}', '${q.correct_answer}', ${idx})">
+                        <div class="option-key">${key}</div>
+                        <div class="option-val">${val}</div>
+                    </div>
+                `).join('');
+
+                const sourcesHtml = (q.source_chunk_ids || []).map(cid => `
+                    <span class="chunk-badge">${cid}</span>
+                `).join('');
+
+                card.innerHTML = `
+                    <div class="question-header">
+                        <div class="q-number">${idx + 1}</div>
+                        <div class="q-text">${escapeHtml(q.question)}</div>
+                    </div>
+                    <div class="options-grid" id="opt-grid-${idx}">
+                        ${optionsHtml}
+                    </div>
+                    <div class="explanation-box" id="exp-box-${idx}">
+                        <div><strong>Grounded Source Explanation:</strong> ${escapeHtml(q.explanation)}</div>
+                        <div class="chunk-sources">
+                            <span style="font-size: 11px; color: var(--text-muted);">Source Chunks:</span>
+                            ${sourcesHtml}
+                        </div>
+                    </div>
+                `;
+
+                questionsContainer.appendChild(card);
+            });
+        }
+
+        // Interactive Option Selection
+        window.checkOption = function(el, selectedKey, correctKey, qIdx) {
+            const grid = document.getElementById(`opt-grid-${qIdx}`);
+            const items = grid.querySelectorAll('.option-item');
+
+            items.forEach(item => {
+                item.classList.remove('correct', 'wrong');
+            });
+
+            if (selectedKey === correctKey) {
+                el.classList.add('correct');
+            } else {
+                el.classList.add('wrong');
+                items.forEach(item => {
+                    const key = item.querySelector('.option-key').textContent.trim();
+                    if (key === correctKey) {
+                        item.classList.add('correct');
+                    }
+                });
+            }
+        };
+
+        // Ingest Upload Folder Button
+        btnIngestFolder.addEventListener('click', async () => {
+            btnIngestFolder.disabled = true;
+            btnIngestFolder.innerHTML = '<span>⏳ Ingesting files in ./upload...</span>';
+            try {
+                const res = await fetch('/api/v1/documents/ingest-folder', { method: 'POST' });
+                if (!res.ok) throw new Error('Folder ingestion failed');
+                const data = await res.json();
+                showToast(`Indexed ${data.length} documents from upload folder!`, 'success');
+                await fetchSystemData();
+            } catch (err) {
+                showToast(err.message, 'error');
+            } finally {
+                btnIngestFolder.disabled = false;
+                btnIngestFolder.innerHTML = '<span>🔄 Rescan & Ingest \'upload\' Folder</span>';
+            }
+        });
+
+        // Copy JSON to clipboard
+        btnCopyJson.addEventListener('click', () => {
+            if (!generatedQuestions || generatedQuestions.length === 0) return;
+            navigator.clipboard.writeText(JSON.stringify(generatedQuestions, null, 2));
+            showToast('Questions JSON copied to clipboard!', 'success');
+        });
+
+        // Print questions
+        btnPrint.addEventListener('click', () => {
+            window.print();
+        });
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initial Data Load
+        fetchSystemData();
+    </script>
+</body>
+</html>

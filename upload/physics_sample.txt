@@ -1,0 +1,14 @@
+Subject: Physics
+
+Chapter: Mechanics
+
+Topic: Velocity
+Velocity is defined as the rate of change of displacement with respect to time. The formula for average velocity is v = delta_s / delta_t. It is a vector quantity having both magnitude and direction.
+
+Topic: Acceleration
+Acceleration is defined as the rate of change of velocity with respect to time. The formula for acceleration is a = delta_v / delta_t. Uniform acceleration occurs when an object changes velocity at a constant rate over equal time intervals. Non-uniform acceleration occurs when velocity changes at varying rates.
+
+Chapter: Thermodynamics
+
+Topic: Heat
+Heat is energy in transit transferred between systems due to a temperature difference. The SI unit of heat is the Joule. Heat transfer can occur via conduction, convection, and radiation.
